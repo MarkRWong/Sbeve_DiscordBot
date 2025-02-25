@@ -1,6 +1,22 @@
 - Features to add:
   - Error handling on improper commands
+  - File structure? <- if needed?
 
+  Sbeve_DiscordBot/
+│── bot.py              # Main entry point
+│── config.py           # Handles environment variables
+│── commands/           # Folder for command modules
+│   ├── __init__.py     # Makes `commands` a package
+│   ├── start.py        # `!start` command logic
+│   ├── stop.py         # `!stop` command logic
+│   ├── status.py       # `!status` command logic
+│── utils/              # Utility functions (e.g., API calls, helpers)
+│   ├── __init__.py     
+│   ├── aws.py          # AWS EC2 helper functions
+│   ├── rcon.py         # RCON command handler
+│── .env                # Environment variables (ignored by Git)
+│── requirements.txt    # Dependencies (discord.py, boto3, etc.)
+│── README.md           # Documentation
 
 - List of commands:
     - start server
