@@ -1,0 +1,13 @@
+- Features to add:
+  - Error handling on improper commands
+
+
+- List of commands:
+    - start server
+    - stop server
+      - stop server -> check if people are online and will ask are you sure if you want to stop if there is someone online
+    - status (check if server is on or off), check how many people online
+
+- AWS connections:
+  - minecraft server creation
+  - bot hosting
