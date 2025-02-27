@@ -31,7 +31,12 @@ pip install discord.py python-dotenv
 3. **Create a `.env` File**  
    In the root directory, create a `.env` file and add your **Discord bot token**:  
    ```
-   DISCORD_TOKEN=your-bot-token-here
+   DISCORD_TOKEN=your-discord-bot-token
+   
+   AWS_INSTANCE_ID=your-aws-instance-id
+   AWS_ACCESS_KEY_ID=your-aws-access-key-id
+   AWS_REGION=your-aws-region
+   AWS_SECRET_ACCESS_KEY=your-aws-secret-access-key
    ```
 
 4. **Run the Bot**  
