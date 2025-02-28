@@ -30,7 +30,7 @@ pip install discord.py python-dotenv boto3
    pip install -r requirements.txt
    ```
 
-3. **Create AWS Secret Key**
+3. **Create AWS Secret Key**<br />
    3.1. *Create a policy under:*
       IAM > Policies > Create Policy > JSON<br />
       ```json
@@ -63,6 +63,7 @@ pip install discord.py python-dotenv boto3
       Check "Use a permissions boundary to control the maximum permissions"<br />
       Search for the newly created policy from 3.1.<br />
       Create the user.<br />
+      
    3.3. *Create access key:*
       Click on your newly created user, under Access Key 1, click on "Create access key", and select "Application running on an AWS compute service". Copy your access key and secret key.
 
