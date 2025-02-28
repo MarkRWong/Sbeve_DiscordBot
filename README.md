@@ -33,7 +33,6 @@ pip install discord.py python-dotenv boto3
 3. **Create AWS Secret Key**
    3.1. *Create a policy under:*
       IAM > Policies > Create Policy > JSON<br />
-      Replace the {} with the following:<br />
       ```json
       {
          "Version": "2012-10-17",
@@ -45,7 +44,7 @@ pip install discord.py python-dotenv boto3
                   "ec2:StartInstances",
                   "ec2:StopInstances"
                ],
-               "Resource": "arn:aws:ec2:{Region}:{account ID}:instance/{instance ID}"
+               "Resource": "arn:aws:ec2:Region:account ID:instance/instance ID"
             },
             {
             "Sid": "VisualEditor1",
