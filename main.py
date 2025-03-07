@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 import boto3
 import paramiko
 import asyncio
-import time
 
 load_dotenv()
 
@@ -35,22 +34,15 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+#change this later maybe put in env idk
+SERVER_RAM = "-Xmx3G -Xms3G"
+
 def sshCommand(client, command):
     try:
         stdin, stdout, stderr = client.exec_command(command)
-        client.close()
-        print(stdout.readlines())
+        return stdout.readlines()
     except Exception as e:
         print(e)
-
-async def stoptMinecraftServer(ctx, client):
-    save = "screen -S minecraft -X stuff 'save-all\n'"
-    sshCommand(client, save)
-    time.sleep(2)
-
-    stop = "screen -S minecraft -X stuff 'stop\n'"
-    sshCommand(client, stop)
-    client.close()
 
 def get_instance_state(instance_id):
     """Get the current state of an EC2 instance."""
@@ -75,7 +67,7 @@ def get_instance_publicIP(instance_id):
 async def on_ready():
     print(f'Logged in as {bot.user.name} (ID: {bot.user.id})')
 
-# Event: starts the ec2 instance
+# Event: starts the ec2 instance and minecraft server
 @bot.command()
 async def start(ctx):
     """Start the EC2 instance if it is not already running."""
@@ -99,21 +91,83 @@ async def start(ctx):
     
     publicIP = get_instance_publicIP(AWS_INSTANCE_ID)
     await ctx.send(f"IP: {publicIP}")
-
-    # SSH connection
-    await ctx.send("Connecting SSH...")
-    client.connect(publicIP, username=EC2_USERNAME, key_filename=PRIVATE_KEY_PATH)
-    await ctx.send("Connected SSH!")
-
     # Opening minecraft server
-    await ctx.send("Opening Minecraft Server...")
-    start = 'cd minecraft-server; java -Xmx1024M -Xms1024M -jar server.jar nogui'
-    sshCommand(client, start)
-    await ctx.send("Minecraft Server Running!")
+    client.connect(publicIP, username=EC2_USERNAME, key_filename=PRIVATE_KEY_PATH)
+    try:
+        await ctx.send("Opening Minecraft Server...")
+        start = f"cd minecraft-server; screen -dmS minecraft java {SERVER_RAM} -jar server.jar nogui"
+        sshCommand(client, start)
+        await ctx.send("Minecraft Server Running!")
+    except Exception as e:
+        print(e)
+    client.close()
 
-# Event: stops the ec2 instance
+# Event: starts the ec2 instance ONLY
+@bot.command()
+async def istart(ctx):
+    """Start the EC2 instance if it is not already running."""
+    if not AWS_INSTANCE_ID:
+        await ctx.send("❌ No instance ID configured.")
+        return
+
+    state = get_instance_state(AWS_INSTANCE_ID)
+
+    if state == "running":
+        await ctx.send("Instance is already running.")
+    elif state == "stopped":
+        await ctx.send("⏳ Starting instance...")
+        ec2.start_instances(InstanceIds=[AWS_INSTANCE_ID])
+        while state != "running":
+            await asyncio.sleep(5)
+            state = get_instance_state(AWS_INSTANCE_ID)
+        await ctx.send("Started instance")
+    else:
+        await ctx.send(f"⚠️ Instance is in '{state}' state. Unable to start.")
+        return
+    
+# Event: save and quits the minecraft server and stops the ec2 instance
 @bot.command()
 async def stop(ctx):
+    """Stop the EC2 instance if it is running."""
+    if not AWS_INSTANCE_ID:
+        await ctx.send("❌ No instance ID configured.")
+        return
+
+    state = get_instance_state(AWS_INSTANCE_ID)
+
+    if state == "stopped":
+        await ctx.send("Instance is already stopped.")
+    elif state == "running":
+        publicIP = get_instance_publicIP(AWS_INSTANCE_ID)
+        try:
+            client.connect(publicIP, username=EC2_USERNAME, key_filename=PRIVATE_KEY_PATH)
+
+            check = "screen -list"
+            cmd = sshCommand(client, check)
+            if cmd != "['No Sockets found in /run/screen/S-ec2-user.\n', '\r\n']":
+                save = "cd minecraft-server; screen -S minecraft -X stuff 'save-all\n'"
+                sshCommand(client, save)
+                stop = "cd minecraft-server; screen -S minecraft -X stuff 'stop\n'"
+                sshCommand(client, stop)
+                print("minecraft server stopped")
+        except Exception as e:
+            print(e)
+
+        await ctx.send("⏳ Stopping instance...")
+        ec2.stop_instances(InstanceIds=[AWS_INSTANCE_ID])
+
+        while state != "stopped":
+            await asyncio.sleep(5)
+            state = get_instance_state(AWS_INSTANCE_ID)
+
+        await ctx.send("Instance stopped successfully.")
+        client.close()
+    else:
+        await ctx.send(f"⚠️ Instance is in '{state}' state. Unable to stop.")
+
+# Event: save and quits the minecraft server and stops the ec2 instance
+@bot.command()
+async def istop(ctx):
     """Stop the EC2 instance if it is running."""
     if not AWS_INSTANCE_ID:
         await ctx.send("❌ No instance ID configured.")
@@ -127,15 +181,34 @@ async def stop(ctx):
         await ctx.send("⏳ Stopping instance...")
         ec2.stop_instances(InstanceIds=[AWS_INSTANCE_ID])
 
-        stoptMinecraftServer(client)
-
         while state != "stopped":
             await asyncio.sleep(5)
             state = get_instance_state(AWS_INSTANCE_ID)
 
         await ctx.send("Instance stopped successfully.")
+        client.close()
     else:
         await ctx.send(f"⚠️ Instance is in '{state}' state. Unable to stop.")
+
+@bot.command()
+async def mc(ctx, msg):
+    """Start the EC2 instance if it is not already running."""
+    if not AWS_INSTANCE_ID:
+        await ctx.send("❌ No instance ID configured.")
+        return
+
+    state = get_instance_state(AWS_INSTANCE_ID)
+
+    if state == "running":
+        publicIP = get_instance_publicIP(AWS_INSTANCE_ID)
+        client.connect(publicIP, username=EC2_USERNAME, key_filename=PRIVATE_KEY_PATH)
+        await ctx.send(f"Running Command: /{msg}")
+        command = f"cd minecraft-server; screen -S minecraft -X stuff '{msg}\n'"
+        sshCommand(client, command)
+        client.close()
+    else:
+        await ctx.send(f"⚠️ Instance is in '{state}' state.")
+        return
 
 # Event: checks the status of the ec2 instance
 @bot.command()
@@ -164,30 +237,17 @@ async def ip(ctx):
     else:
         await ctx.send(f"⚠️ Instance is in '{state}' state.")
 
+# sends ssh Command to the server
 @bot.command()
-async def ssh(ctx, arg):
-    stdin, stdout, stderr = client.exec_command(arg)
-    print(stdout)
-    line = stdout.readlines()
-    print(line)
-    await ctx.send(line)
+async def cmd(ctx, msg):
+    state = get_instance_state(AWS_INSTANCE_ID)
 
-@bot.command()
-async def sshstatus(ctx):
-    try:
-        if client.get_transport() is not None:
-            if client.get_transport().is_active():
-                print("Connection is still alive.")
-                await ctx.send("Connection is still alive.")
-            else:
-                print("Connection is not active.")
-                await ctx.send("Connection is not active.")
-    except Exception as e:
-        print("Error")
-
-@bot.command()
-async def sshclose(ctx):
-    client.close()
+    if state == "running":
+        publicIP = get_instance_publicIP(AWS_INSTANCE_ID)
+        client.connect(publicIP, username=EC2_USERNAME, key_filename=PRIVATE_KEY_PATH)
+        cmd = sshCommand(client, msg)
+        await ctx.send(cmd)
+        client.close()
 
 # Run the bot with your token
 bot.run(DISCORD_TOKEN)
