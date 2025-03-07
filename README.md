@@ -46,7 +46,7 @@ pip install discord.py python-dotenv boto3 paramiko
                   "ec2:StartInstances",
                   "ec2:StopInstances"
                ],
-               "Resource": "arn:aws:ec2:Region:account ID:instance/instance ID"
+               "Resource": "arn:aws:ec2:{Region}:{account ID}:instance/{instance ID}"
             },
             {
             "Sid": "VisualEditor1",
