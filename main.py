@@ -15,12 +15,12 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 AWS_INSTANCE_ID = os.getenv("AWS_INSTANCE_ID")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_REGION = os.getenv("AWS_REGION", "us-west-1")
+AWS_REGION = os.getenv("AWS_REGION", "us-west-2")
 AWS_USERNAME = os.getenv("AWS_USERNAME", "ec2-user")
 AWS_SSH_PRIVATE_KEY_PATH = os.getenv("AWS_SSH_PRIVATE_KEY_PATH", "./MINECRAFT_SERVER_FILE_PATH.pem")
 
 # Server Variables
-SERVER_RAM = os.getenv("SERVER_RAM", "-Xmx1024M -Xms1024M")
+SERVER_RAM = os.getenv("SERVER_RAM", "-Xmx3G -Xms3G")
 MINECRAFT_SERVER_FILE_PATH = os.getenv("MINECRAFT_SERVER_FILE_PATH", "MINECRAFT_SERVER_FILE_PATH")
 
 client = paramiko.SSHClient()
